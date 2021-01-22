@@ -4,7 +4,7 @@ import com.example.webflux.firstwebflux.dto.TodoRequest
 import com.example.webflux.firstwebflux.dto.TodoResponse
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters.fromProducer
-import org.springframework.web.reactive.function.BodyInserters.fromPublisher
+import org.springframework.web.reactive.function.BodyInserters.fromValue
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
@@ -23,8 +23,11 @@ class TodoHandler(
 
     fun get(request: ServerRequest): Mono<ServerResponse> {
         val id = request.pathVariable("id").toInt()
-        val response = repo.get(id).map(TodoEntity::toResponse)
-        return ok().body(fromPublisher(response, TodoResponse::class.java))
+        return repo
+            .get(id)
+            .map(TodoEntity::toResponse)
+            .flatMap { ok().body(fromValue(it)) }
+            .switchIfEmpty(notFound().build())
     }
 
     fun write(request: ServerRequest): Mono<ServerResponse> {
